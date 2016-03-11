@@ -31,7 +31,7 @@ pif_BigInt/proc
 
 			// Last two blocks. These are used to determine whether to contract Diff at the very end.
 			LastBlock
-			ntLastBlock
+			ntLastBlock // 'next-to-last' block.
 
 		/* Determine Int metadata */
 

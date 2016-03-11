@@ -368,7 +368,7 @@ pif_BigInt/proc
 				Span = Length / 2
 
 				list
-					// Last and most significant halves of A and B, respectively.
+					// Least and most significant halves of A and B, respectively.
 					A0 = A.Copy(1, Span+1)
 					A1 = A.Copy(Span+1)
 
@@ -379,38 +379,74 @@ pif_BigInt/proc
 					A_diff
 					B_diff
 
-					// The products A1*B1, A_diff*B_diff, and A1*B1, respectively.
-					// P2
-					// P1
-					// P0
+					// The products A1*B1, A_diff*B_diff, and A0*B0, respectively.
+					P2
+					P1
+					P0
 
-			// Compute the differences.
+			/* Compute the differences. We can compute these at the same time, as
+			   they are the same length. */
 			A_diff = new
 			B_diff = new
 
 			A_diff.len = Span
 			B_diff.len = Span
 
-			// Set to one for computing the negative of A0.
-			var/carry = 1
+			// Set to one for computing the negatives of A0 and B1, respectively.
+			var
+				A_carry = 1
+				B_carry = 1
 
 			for(var/i = 1, i <= Span, i ++)
-				return
+				// See the Subtraction() method in Subtraction.dm for the logic behind the following.
+				var
+					A0Block = ~A0[i]
+					A1Block =  A1[i]
 
+					A_diff1 = (A1Block & 0x00FF) + (A0Block & 0x00FF) + (A_carry & 0x00FF)
+					A_diff2 = ((A1Block & 0xFF00) >> 8) + ((A0Block & 0xFF00) >> 8) + ((A_carry & 0xFF00) >> 8) \
+							  + ((A_diff1 & 0xFF00) >> 8)
+
+					B1Block = ~B1[i]
+					B0Block =  B0[i]
+
+					B_diff1 = (B0Block & 0x00FF) + (B1Block & 0x00FF) + (B_carry & 0x00FF)
+					B_diff2 = ((B0Block & 0xFF00) >> 8) + ((B1Block & 0xFF00) >> 8) + ((B_carry & 0xFF00) >> 8) \
+							  + ((B_diff1 & 0xFF00) >> 8)
+
+				A_carry = (A_diff2 & 0xFF00) >> 8
+				A_diff[i] = (A_diff1 & 0x00FF) | ((A_diff2 & 0x00FF) << 8)
+
+				B_carry = (B_diff2 & 0xFF00) >> 8
+				B_diff[i] = (B_diff1 & 0x00FF) | ((B_diff2 & 0x00FF) << 8)
 
 			// Recursively compute P2, P1, and P0.
-			// P2 = .(A1, B1)
-			// P1 = .(A_diff, B_diff)
-			// P0 = .(A0, B0)
+			P2 = .(A1, B1)
+			P1 = .(A_diff, B_diff)
+			P0 = .(A0, B0)
 
-			// Now we sum P0, P1, and P2 with the appropriate factors.
-			// . = P0.Copy()
+			/* Now we sum P0, P1, and P2 with the appropriate factors. That is, by effectively bitshifting
+			   P1 and P2 by a certain amount as a function of the span. */
+
+			// P0 has a 'bitshift/multiplication' factor of 1, so just begin the addition process by assigning
+			// it to ., as it will always be returned.
+			. = P0
+
+			// Carry for the addition operation.
+			var/carry = 0
+
+			return P1
 
 	Square()
 		return src.Multiply(src)
 
 	Power(n)
-		// n is a non-negative integer.
+		// n is a non-negative integer, so n <= 65535 in all likelihood.
+
+		// If you reach the point that you'd like me to implement use a BigInt instead of a DM integer, you are
+		// probably doing things horribly wrong. The smallest (positive) integer that would be relevant here is
+		// 2, so that would be 2**65536, which would require 65536 bits (8192 bytes) to store, and is well beyond
+		// the scope of this library.
 
 		var/pif_BigInt
 			Int = new(1)
@@ -433,4 +469,7 @@ mob/Login()
 	..()
 
 	var/pif_BigInt/A = new(0x0001)
-	A._KaratsubaMultiplication(list(0x0001, 0x0002), list(0x0003, 0x0004))
+	var/list/L = A._KaratsubaMultiplication(list(0x0001, 0x0002), list(0x0003, 0x0004))
+
+	for(var/i = 1, i <= L.len, i ++)
+		world << "<tt>block [i] => [L[i]]</tt>"
