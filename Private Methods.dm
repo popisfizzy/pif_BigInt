@@ -21,6 +21,7 @@ pif_BigInt/proc
 
 #undef	pif_BigInt_InBounds
 
+/*
 	_AddAtBlock(int, block_pos = 1)
 		var
 			srcLength = src.Length()
@@ -57,4 +58,4 @@ pif_BigInt/proc
 				break
 
 		src.sign = null
-		return src
+		return src */
